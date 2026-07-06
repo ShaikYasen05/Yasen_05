@@ -4,7 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { 
-  loadDB, saveDB, hashPassword, generateToken, verifyToken 
+  loadDB, saveDB, hashPassword, generateToken, verifyToken, syncDBFromFirestore 
 } from "./server-db";
 import { 
   User, UserRole, ProjectStatus, ProjectPriority, TaskStatus, TaskPriority, 
@@ -61,6 +61,32 @@ try {
 } catch (e) {
   console.warn("Failed to create uploads directory, might be in a read-only environment:", e);
 }
+
+// Database Firestore Sync Middleware
+let isDBSynced = false;
+let dbSyncPromise: Promise<void> | null = null;
+
+async function ensureDBSynced() {
+  if (isDBSynced) return;
+  if (!dbSyncPromise) {
+    dbSyncPromise = (async () => {
+      try {
+        await syncDBFromFirestore();
+        isDBSynced = true;
+      } catch (err) {
+        console.error("Critical error syncing DB at startup:", err);
+      } finally {
+        dbSyncPromise = null;
+      }
+    })();
+  }
+  return dbSyncPromise;
+}
+
+app.use(async (req, res, next) => {
+  await ensureDBSynced();
+  next();
+});
 
 // ==========================================
 // REST API ROUTES

@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user profile in the TaskForge workspace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "department": { "type": "string" },
+        "role": { "type": "string" },
+        "bio": { "type": "string" },
+        "skills": { "type": "array" },
+        "joinedDate": { "type": "string" },
+        "lastActive": { "type": "string" },
+        "avatar": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Workspace": {
+      "title": "Workspace",
+      "description": "The root document containing the entire state of the workspace",
+      "type": "object",
+      "properties": {
+        "users": { "type": "array" },
+        "passwords": { "type": "object" },
+        "organizations": { "type": "array" },
+        "teams": { "type": "array" },
+        "projects": { "type": "array" },
+        "tasks": { "type": "array" },
+        "notifications": { "type": "array" },
+        "activityLogs": { "type": "array" },
+        "invites": { "type": "array" }
+      }
+    }
+  },
+  "firestore": {
+    "/workspaces/{workspaceId}": {
+      "schema": "Workspace",
+      "description": "Root workspace document containing the synchronized state"
+    }
+  }
+}

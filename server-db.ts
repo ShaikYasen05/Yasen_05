@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { 
   User, Organization, Team, Project, Task, Notification, ActivityLog, 
   UserRole, ProjectStatus, ProjectPriority, TaskStatus, TaskPriority 
@@ -536,11 +538,72 @@ const SEED_ACTIVITY: ActivityLog[] = [
   }
 ];
 
+let memoryDb: DatabaseSchema | null = null;
+let firestoreDb: any = null;
+
+function getFirestoreDb() {
+  if (firestoreDb) return firestoreDb;
+  
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      const app = initializeApp(config);
+      firestoreDb = getFirestore(app, config.firestoreDatabaseId);
+      console.log("Firebase Firestore initialized successfully with database id:", config.firestoreDatabaseId);
+    } else {
+      console.warn("firebase-applet-config.json not found. Falling back to local storage.");
+    }
+  } catch (err) {
+    console.error("Failed to initialize Firebase Firestore:", err);
+  }
+  return firestoreDb;
+}
+
+export async function syncDBFromFirestore(): Promise<void> {
+  const dbClient = getFirestoreDb();
+  if (!dbClient) {
+    console.warn("Firestore not available. Using local file database instead.");
+    loadDB();
+    return;
+  }
+
+  try {
+    console.log("Fetching database state from Firestore...");
+    const docRef = doc(dbClient, "workspaces", "default");
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data() as DatabaseSchema;
+      memoryDb = data;
+      console.log("Successfully loaded database state from Firestore.");
+      try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+      } catch (e) {
+        // Safe to ignore in read-only environment
+      }
+    } else {
+      console.log("No database found in Firestore. Seeding initial data...");
+      const initialSchema = loadDB();
+      await setDoc(docRef, initialSchema);
+      console.log("Successfully seeded initial data to Firestore.");
+    }
+  } catch (err) {
+    console.error("Failed to sync database from Firestore:", err);
+    loadDB();
+  }
+}
+
 export function loadDB(): DatabaseSchema {
+  if (memoryDb) {
+    return memoryDb;
+  }
+
   try {
     if (fs.existsSync(DB_FILE)) {
       const data = fs.readFileSync(DB_FILE, "utf-8");
-      return JSON.parse(data);
+      memoryDb = JSON.parse(data);
+      return memoryDb!;
     }
   } catch (err) {
     console.error("Error loading DB file. Reverting to memory.", err);
@@ -565,16 +628,30 @@ export function loadDB(): DatabaseSchema {
     invites: []
   };
 
+  memoryDb = initialSchema;
   saveDB(initialSchema);
   return initialSchema;
 }
 
 export function saveDB(db: DatabaseSchema): boolean {
+  memoryDb = db;
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
-    return true;
   } catch (err) {
-    console.error("Failed to write to DB file", err);
-    return false;
+    console.warn("Could not save database state to local file (e.g. read-only filesystem), proceeding with Cloud persistence.");
   }
+
+  const dbClient = getFirestoreDb();
+  if (dbClient) {
+    const docRef = doc(dbClient, "workspaces", "default");
+    setDoc(docRef, db)
+      .then(() => {
+        console.log("Successfully saved database state to Firestore in the background.");
+      })
+      .catch((err) => {
+        console.error("Failed to save database state to Firestore in the background:", err);
+      });
+  }
+
+  return true;
 }
