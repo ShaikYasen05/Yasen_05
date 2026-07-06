@@ -1,0 +1,6 @@
+{
+  "name": "TaskForge",
+  "description": "Enterprise-grade Project & Task Management Platform inspired by Linear, ClickUp, and Jira with high-performance workspaces and team collaboration tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

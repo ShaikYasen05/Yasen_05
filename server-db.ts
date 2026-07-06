@@ -1,0 +1,580 @@
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import { 
+  User, Organization, Team, Project, Task, Notification, ActivityLog, 
+  UserRole, ProjectStatus, ProjectPriority, TaskStatus, TaskPriority 
+} from "./src/types";
+
+const DB_FILE = path.join(process.cwd(), "db-store.json");
+
+export function hashPassword(password: string): string {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+export function generateToken(payload: object): string {
+  // Simple base64 token for authentication simulation (securely structured)
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64");
+  const data = Buffer.from(JSON.stringify({ ...payload, exp: Date.now() + 24 * 60 * 60 * 1000 })).toString("base64");
+  const signature = crypto.createHmac("sha256", "taskforge-secret-key").update(`${header}.${data}`).digest("base64");
+  return `${header}.${data}.${signature}`;
+}
+
+export function verifyToken(token: string): any {
+  try {
+    const [headerB64, dataB64, signature] = token.split(".");
+    if (!headerB64 || !dataB64 || !signature) return null;
+    
+    const expectedSig = crypto.createHmac("sha256", "taskforge-secret-key").update(`${headerB64}.${dataB64}`).digest("base64");
+    if (signature !== expectedSig) return null;
+    
+    const payload = JSON.parse(Buffer.from(dataB64, "base64").toString());
+    if (payload.exp < Date.now()) return null; // Expired
+    return payload;
+  } catch (e) {
+    return null;
+  }
+}
+
+export interface DatabaseSchema {
+  users: User[];
+  passwords: Record<string, string>; // userId -> hashedPassword
+  organizations: Organization[];
+  teams: Team[];
+  projects: Project[];
+  tasks: Task[];
+  notifications: Notification[];
+  activityLogs: ActivityLog[];
+  invites: { id: string; orgId: string; email: string; role: UserRole; code: string }[];
+}
+
+// Initial robust seed data
+const SEED_USERS: User[] = [
+  {
+    id: "usr-admin",
+    name: "Sarika Salunke",
+    email: "sarika@taskforge.com",
+    phone: "+91 98200 12345",
+    department: "Engineering",
+    role: UserRole.ADMIN,
+    bio: "Head of Engineering at TaskForge. Enjoys building highly scalable architectures and designing beautiful developer experiences.",
+    skills: ["TypeScript", "Next.js", "System Design", "Kubernetes", "AI/ML"],
+    joinedDate: "2025-01-10",
+    lastActive: "Just now",
+    avatar: ""
+  },
+  {
+    id: "usr-pm",
+    name: "Rahul Sharma",
+    email: "rahul@taskforge.com",
+    phone: "+91 98300 54321",
+    department: "Product Management",
+    role: UserRole.PROJECT_MANAGER,
+    bio: "Lead Product Manager. Passionate about product-led growth, data analytics, and Linear-like hotkey efficiency.",
+    skills: ["Product Strategy", "Agile", "User Research", "Metrics", "Figma"],
+    joinedDate: "2025-03-15",
+    lastActive: "5m ago",
+    avatar: ""
+  },
+  {
+    id: "usr-liam",
+    name: "Abdul Khan",
+    email: "abdul@taskforge.com",
+    phone: "+91 98100 98765",
+    department: "Engineering",
+    role: UserRole.TEAM_MEMBER,
+    bio: "Senior Full Stack Engineer. Specializes in building elegant, low-latency React components and complex data visualization dashboards.",
+    skills: ["React", "Node.js", "D3.js", "Tailwind CSS", "GraphQL"],
+    joinedDate: "2025-04-01",
+    lastActive: "15m ago",
+    avatar: ""
+  },
+  {
+    id: "usr-sophia",
+    name: "Inspector Daya",
+    email: "daya@taskforge.com",
+    phone: "+91 98400 67890",
+    department: "Design System",
+    role: UserRole.TEAM_MEMBER,
+    bio: "Lead UI/UX Designer. Focused on minimalist interfaces, micro-animations, and typographic hierarchy.",
+    skills: ["UI/UX Design", "Figma", "Design Systems", "Framer Motion", "Tailwind CSS"],
+    joinedDate: "2025-02-18",
+    lastActive: "1h ago",
+    avatar: ""
+  },
+  {
+    id: "usr-ethan",
+    name: "Dr. Salunke",
+    email: "salunke@taskforge.com",
+    phone: "+91 98900 11223",
+    department: "Engineering",
+    role: UserRole.TEAM_MEMBER,
+    bio: "DevOps & Backend Specialist. Enjoys debugging memory leaks, optimizing database queries, and automating workflows.",
+    skills: ["Node.js", "Express", "Docker", "PostgreSQL", "Redis"],
+    joinedDate: "2025-05-12",
+    lastActive: "2d ago",
+    avatar: ""
+  }
+];
+
+const SEED_ORGANIZATIONS: Organization[] = [
+  {
+    id: "org-forgetech",
+    name: "ForgeTech Industries",
+    logo: "⚡",
+    domain: "forgetech.com",
+    brandingColor: "#0061ff",
+    settings: {
+      allowInvites: true,
+      requireTwoFactor: false
+    }
+  },
+  {
+    id: "org-vanguard",
+    name: "Vanguard Digital",
+    logo: "🔮",
+    domain: "vanguard.digital",
+    brandingColor: "#7c3aed",
+    settings: {
+      allowInvites: true,
+      requireTwoFactor: true
+    }
+  }
+];
+
+const SEED_TEAMS: Team[] = [
+  {
+    id: "team-design",
+    name: "Core Design System",
+    leaderId: "usr-sophia",
+    memberIds: ["usr-sophia", "usr-liam", "usr-pm"],
+    description: "Building the standard component library and design system for all TaskForge services.",
+    orgId: "org-forgetech"
+  },
+  {
+    id: "team-platform",
+    name: "SaaS Platform Team",
+    leaderId: "usr-pm",
+    memberIds: ["usr-pm", "usr-liam", "usr-ethan", "usr-sophia"],
+    description: "Responsible for core user dashboards, task workflows, and billing engines.",
+    orgId: "org-forgetech"
+  },
+  {
+    id: "team-ai",
+    name: "Intelligence Lab",
+    leaderId: "usr-admin",
+    memberIds: ["usr-admin", "usr-pm", "usr-ethan"],
+    description: "Integrating LLMs, prompt pipelines, and predictive risk engines into product features.",
+    orgId: "org-forgetech"
+  }
+];
+
+const SEED_PROJECTS: Project[] = [
+  {
+    id: "prj-apollo",
+    name: "Apollo Design System",
+    orgId: "org-forgetech",
+    coverImage: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800",
+    description: "Develop a next-generation token-based design system supporting dark/light UI frameworks, high accessibility standards, and fluid Framer Motion animations.",
+    startDate: "2026-06-01",
+    deadline: "2026-08-30",
+    priority: ProjectPriority.HIGH,
+    status: ProjectStatus.IN_PROGRESS,
+    progress: 72,
+    managerId: "usr-pm",
+    memberIds: ["usr-pm", "usr-sophia", "usr-liam"],
+    budget: 85000,
+    tags: ["Design System", "React", "A11y"],
+    milestones: [
+      { id: "m-1", title: "Figma Tokens Handover", dueDate: "2026-06-15", completed: true },
+      { id: "m-2", title: "Core Component Release", dueDate: "2026-07-20", completed: false },
+      { id: "m-3", title: "Accessibility Audit", dueDate: "2026-08-15", completed: false }
+    ],
+    dependencies: [],
+    health: "Healthy"
+  },
+  {
+    id: "prj-phoenix",
+    name: "Phoenix SaaS Platform",
+    orgId: "org-forgetech",
+    coverImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
+    description: "Re-architecting our enterprise client onboarding, drag-and-drop Kanban panels, and introducing real-time Socket.IO collaboration.",
+    startDate: "2026-05-10",
+    deadline: "2026-07-25",
+    priority: ProjectPriority.CRITICAL,
+    status: ProjectStatus.IN_PROGRESS,
+    progress: 48,
+    managerId: "usr-pm",
+    memberIds: ["usr-pm", "usr-liam", "usr-ethan", "usr-sophia"],
+    budget: 140000,
+    tags: ["Enterprise", "Real-time", "API"],
+    milestones: [
+      { id: "m-4", title: "Auth Engine Rewrite", dueDate: "2026-05-25", completed: true },
+      { id: "m-5", title: "Kanban Performance Tuning", dueDate: "2026-06-30", completed: false },
+      { id: "m-6", title: "Client Beta Release", dueDate: "2026-07-15", completed: false }
+    ],
+    dependencies: ["prj-apollo"],
+    health: "At Risk"
+  },
+  {
+    id: "prj-ai-core",
+    name: "Next-Gen AI Assistant",
+    orgId: "org-forgetech",
+    coverImage: "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800",
+    description: "Build an elegant, persistent floating AI Assistant leveraging the Gemini API to help write task descriptions, analyze backlog risks, and create workflows from natural language meeting notes.",
+    startDate: "2026-07-01",
+    deadline: "2026-10-15",
+    priority: ProjectPriority.CRITICAL,
+    status: ProjectStatus.IN_PROGRESS,
+    progress: 25,
+    managerId: "usr-admin",
+    memberIds: ["usr-admin", "usr-pm", "usr-ethan"],
+    budget: 210000,
+    tags: ["AI", "Gemini", "Backlog Automation"],
+    milestones: [
+      { id: "m-7", title: "Gemini SDK API Setup", dueDate: "2026-07-10", completed: true },
+      { id: "m-8", title: "Backlog Analysis Pipeline", dueDate: "2026-08-15", completed: false },
+      { id: "m-9", title: "Floating UX Component", dueDate: "2026-09-01", completed: false }
+    ],
+    dependencies: [],
+    health: "Healthy"
+  }
+];
+
+const SEED_TASKS: Task[] = [
+  {
+    id: "tsk-101",
+    projectId: "prj-apollo",
+    title: "Define global light/dark theme tokens",
+    description: "Map all CSS variables in tailwindconfig to correspond with global semantic tokens like bg-primary, text-accent, border-muted.",
+    priority: TaskPriority.HIGH,
+    status: TaskStatus.COMPLETED,
+    labels: ["Design", "Setup"],
+    dueDate: "2026-06-12",
+    estimatedHours: 12,
+    actualHours: 14,
+    reporterId: "usr-pm",
+    assigneeId: "usr-sophia",
+    watcherIds: ["usr-admin", "usr-pm"],
+    checklist: [
+      { id: "c-1", text: "Establish core semantic palette", completed: true },
+      { id: "c-2", text: "Confirm contrast compliance (WCAG AA)", completed: true },
+      { id: "c-3", text: "Deliver JSON tokens to developers", completed: true }
+    ],
+    attachments: [
+      { id: "att-1", name: "tokens_export.json", url: "#", size: "24 KB", mimeType: "application/json", uploadedBy: "usr-sophia", uploadedAt: "2026-06-11" }
+    ],
+    comments: [
+      {
+        id: "com-1",
+        userId: "usr-pm",
+        userName: "Rahul Sharma",
+        userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+        content: "These tokens look incredibly clean Daya! Ready to import directly into the Tailwind file.",
+        timestamp: "2026-06-11T14:30:00Z",
+        replies: [],
+        reactions: [{ emoji: "🚀", userIds: ["usr-sophia"] }]
+      }
+    ],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-06-05T09:00:00Z",
+    updatedAt: "2026-06-12T17:00:00Z"
+  },
+  {
+    id: "tsk-102",
+    projectId: "prj-apollo",
+    title: "Create accessible Date Range Selector with Keyboard Nav",
+    description: "Need a robust range calendar picker. Must support keyboard traversal (arrows), focus management, and screen reader announcements.",
+    priority: TaskPriority.CRITICAL,
+    status: TaskStatus.IN_PROGRESS,
+    labels: ["Engineering", "A11y"],
+    dueDate: "2026-07-18",
+    estimatedHours: 24,
+    actualHours: 16,
+    reporterId: "usr-pm",
+    assigneeId: "usr-liam",
+    watcherIds: ["usr-sophia"],
+    checklist: [
+      { id: "c-4", text: "Base grid rendering", completed: true },
+      { id: "c-5", text: "Multi-month calendar view", completed: true },
+      { id: "c-6", text: "Keyboard navigation handlers", completed: false },
+      { id: "c-7", text: "Screen reader (ARIA) testing", completed: false }
+    ],
+    attachments: [],
+    comments: [
+      {
+        id: "com-2",
+        userId: "usr-sophia",
+        userName: "Inspector Daya",
+        userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+        content: "Please ensure the focused state has an extremely distinct blue outline for keyboard users.",
+        timestamp: "2026-07-04T10:15:00Z",
+        replies: [],
+        reactions: [{ emoji: "👍", userIds: ["usr-liam"] }]
+      }
+    ],
+    subtasks: [
+      { id: "sub-1", title: "Write date calculation tests", completed: true },
+      { id: "sub-2", title: "Style the calendar popover card", completed: true }
+    ],
+    dependencies: [],
+    createdAt: "2026-06-10T11:00:00Z",
+    updatedAt: "2026-07-05T18:30:00Z"
+  },
+  {
+    id: "tsk-103",
+    projectId: "prj-apollo",
+    title: "Framer Motion ripple button components",
+    description: "Write custom generic button styles that trigger elegant expanding circular ripple highlights on focus or clicks.",
+    priority: TaskPriority.LOW,
+    status: TaskStatus.TO_DO,
+    labels: ["Design", "Engineering"],
+    dueDate: "2026-08-05",
+    estimatedHours: 8,
+    actualHours: 0,
+    reporterId: "usr-sophia",
+    assigneeId: "usr-sophia",
+    watcherIds: [],
+    checklist: [],
+    attachments: [],
+    comments: [],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-06-15T10:00:00Z",
+    updatedAt: "2026-06-15T10:00:00Z"
+  },
+  {
+    id: "tsk-201",
+    projectId: "prj-phoenix",
+    title: "Implement drag-and-drop state machine",
+    description: "Configure standard handlers to support dragging project cards smoothly between Kanban status columns. Needs optimisitic UI state updates and rollbacks if backend patch request fails.",
+    priority: TaskPriority.CRITICAL,
+    status: TaskStatus.IN_PROGRESS,
+    labels: ["Backend", "Engineering"],
+    dueDate: "2026-07-10",
+    estimatedHours: 32,
+    actualHours: 20,
+    reporterId: "usr-pm",
+    assigneeId: "usr-liam",
+    watcherIds: ["usr-ethan"],
+    checklist: [
+      { id: "c-8", text: "Drag gesture listener setup", completed: true },
+      { id: "c-9", text: "Dynamic layout animations", completed: true },
+      { id: "c-10", text: "Optimistic updates state handler", completed: false },
+      { id: "c-11", text: "API endpoint for bulk status updating", completed: false }
+    ],
+    attachments: [],
+    comments: [
+      {
+        id: "com-3",
+        userId: "usr-ethan",
+        userName: "Dr. Salunke",
+        userAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+        content: "I'll create the bulk PATCH `/api/tasks/reorder` endpoint today so you can connect the state updates.",
+        timestamp: "2026-07-04T16:00:00Z",
+        replies: [],
+        reactions: [{ emoji: "🔥", userIds: ["usr-liam", "usr-pm"] }]
+      }
+    ],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-06-01T08:00:00Z",
+    updatedAt: "2026-07-05T12:00:00Z"
+  },
+  {
+    id: "tsk-202",
+    projectId: "prj-phoenix",
+    title: "Database schema locking issue on billing queue",
+    description: "Concurrent payment processing threads are locking tables during concurrent renewals. Implement transactions with strict row locks or switch to Redis distributed locks.",
+    priority: TaskPriority.CRITICAL,
+    status: TaskStatus.BLOCKED,
+    labels: ["Database", "Security"],
+    dueDate: "2026-07-12",
+    estimatedHours: 16,
+    actualHours: 12,
+    reporterId: "usr-ethan",
+    assigneeId: "usr-ethan",
+    watcherIds: ["usr-pm", "usr-admin"],
+    checklist: [],
+    attachments: [],
+    comments: [],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-06-18T14:00:00Z",
+    updatedAt: "2026-07-05T20:00:00Z"
+  },
+  {
+    id: "tsk-203",
+    projectId: "prj-phoenix",
+    title: "SaaS Workspace Branding Setup UI",
+    description: "Allow workspace managers to select corporate branding logos, custom email header colors, and configure subdomains.",
+    priority: TaskPriority.MEDIUM,
+    status: TaskStatus.TO_DO,
+    labels: ["Branding", "UI"],
+    dueDate: "2026-07-24",
+    estimatedHours: 16,
+    actualHours: 0,
+    reporterId: "usr-pm",
+    assigneeId: "usr-sophia",
+    watcherIds: [],
+    checklist: [],
+    attachments: [],
+    comments: [],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-06-20T10:00:00Z",
+    updatedAt: "2026-06-20T10:00:00Z"
+  },
+  {
+    id: "tsk-301",
+    projectId: "prj-ai-core",
+    title: "Initialize Gemini SDK connection on express",
+    description: "Configure standard GoogleGenAI client on backend with proper headers and wire up a simple POST router that handles streaming prompts.",
+    priority: TaskPriority.HIGH,
+    status: TaskStatus.COMPLETED,
+    labels: ["AI", "API"],
+    dueDate: "2026-07-04",
+    estimatedHours: 8,
+    actualHours: 6,
+    reporterId: "usr-admin",
+    assigneeId: "usr-ethan",
+    watcherIds: ["usr-pm"],
+    checklist: [
+      { id: "c-12", text: "Install @google/genai SDK", completed: true },
+      { id: "c-13", text: "Wire express API route and pass env secret", completed: true },
+      { id: "c-14", text: "Format system prompt instructions", completed: true }
+    ],
+    attachments: [],
+    comments: [],
+    subtasks: [],
+    dependencies: [],
+    createdAt: "2026-07-01T09:00:00Z",
+    updatedAt: "2026-07-04T15:00:00Z"
+  },
+  {
+    id: "tsk-302",
+    projectId: "prj-ai-core",
+    title: "Implement 'TaskForge AI' floating context reader",
+    description: "The floating assistant widget must dynamically ingest current project health status, backlog totals, and active milestones to provide relevant risk assessment summaries.",
+    priority: TaskPriority.CRITICAL,
+    status: TaskStatus.IN_PROGRESS,
+    labels: ["AI", "UI"],
+    dueDate: "2026-07-15",
+    estimatedHours: 24,
+    actualHours: 8,
+    reporterId: "usr-admin",
+    assigneeId: "usr-pm",
+    watcherIds: ["usr-liam"],
+    checklist: [
+      { id: "c-15", text: "Design slide-over panel interface", completed: true },
+      { id: "c-16", text: "Aggregate workspace statistics payload", completed: false },
+      { id: "c-17", text: "Contextual system prompts logic", completed: false }
+    ],
+    attachments: [],
+    comments: [],
+    subtasks: [],
+    dependencies: ["tsk-301"],
+    createdAt: "2026-07-02T10:00:00Z",
+    updatedAt: "2026-07-05T21:10:00Z"
+  }
+];
+
+const SEED_NOTIFICATIONS: Notification[] = [
+  {
+    id: "not-1",
+    userId: "usr-pm",
+    title: "Task Blocked",
+    message: "Dr. Salunke has marked 'Database schema locking issue on billing queue' as Blocked.",
+    type: "deadline_reminder",
+    read: false,
+    createdAt: "2026-07-05T20:00:00Z",
+    link: "/tasks/tsk-202"
+  },
+  {
+    id: "not-2",
+    userId: "usr-pm",
+    title: "New Comment added",
+    message: "Inspector Daya commented on 'Accessible Date Range Selector'.",
+    type: "comment_added",
+    read: false,
+    createdAt: "2026-07-04T10:15:00Z",
+    link: "/tasks/tsk-102"
+  }
+];
+
+const SEED_ACTIVITY: ActivityLog[] = [
+  {
+    id: "act-1",
+    projectId: "prj-apollo",
+    taskId: "tsk-101",
+    userId: "usr-sophia",
+    userName: "Inspector Daya",
+    action: "completed_task",
+    details: "completed task 'Define global light/dark theme tokens'",
+    timestamp: "2026-06-12T17:00:00Z"
+  },
+  {
+    id: "act-2",
+    projectId: "prj-phoenix",
+    taskId: "tsk-202",
+    userId: "usr-ethan",
+    userName: "Dr. Salunke",
+    action: "status_changed",
+    details: "changed status to Blocked due to database rowlocks.",
+    timestamp: "2026-07-05T20:00:00Z"
+  },
+  {
+    id: "act-3",
+    projectId: "prj-ai-core",
+    taskId: "tsk-301",
+    userId: "usr-ethan",
+    userName: "Dr. Salunke",
+    action: "completed_task",
+    details: "completed task 'Initialize Gemini SDK connection on express'",
+    timestamp: "2026-07-04T15:00:00Z"
+  }
+];
+
+export function loadDB(): DatabaseSchema {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const data = fs.readFileSync(DB_FILE, "utf-8");
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error loading DB file. Reverting to memory.", err);
+  }
+
+  // Create default schema & seed it
+  const initialSchema: DatabaseSchema = {
+    users: SEED_USERS,
+    passwords: {
+      "usr-admin": hashPassword("admin"),
+      "usr-pm": hashPassword("pm"),
+      "usr-liam": hashPassword("user"),
+      "usr-sophia": hashPassword("user"),
+      "usr-ethan": hashPassword("user")
+    },
+    organizations: SEED_ORGANIZATIONS,
+    teams: SEED_TEAMS,
+    projects: SEED_PROJECTS,
+    tasks: SEED_TASKS,
+    notifications: SEED_NOTIFICATIONS,
+    activityLogs: SEED_ACTIVITY,
+    invites: []
+  };
+
+  saveDB(initialSchema);
+  return initialSchema;
+}
+
+export function saveDB(db: DatabaseSchema): boolean {
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    return true;
+  } catch (err) {
+    console.error("Failed to write to DB file", err);
+    return false;
+  }
+}
