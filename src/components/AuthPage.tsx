@@ -336,30 +336,59 @@ export default function AuthPage({ onAuthSuccess, apiClient }: AuthPageProps) {
           {/* Seed User Demo Account Access Cards */}
           {(mode === "login" || mode === "register") && (
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-2xs space-y-3">
-              <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">
-                Enterprise Seed Accounts for Evaluation:
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Predefined Key Auth Access (Instant Bypass):
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <button
                   onClick={() => handleDemoLogin("sarika@taskforge.com", "admin")}
-                  className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer"
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer flex flex-col justify-between"
                 >
-                  <span className="block text-[10px] font-bold text-slate-700">Sarika Salunke</span>
-                  <span className="block text-[8px] text-amber-600 font-semibold">Admin</span>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-700">Sarika Salunke</span>
+                    <span className="block text-[8px] text-rose-600 font-semibold uppercase tracking-wider mt-0.5">Admin</span>
+                  </div>
+                  <span className="block text-[8px] text-slate-400 mt-2">Key: <strong className="text-slate-600">admin</strong></span>
                 </button>
                 <button
                   onClick={() => handleDemoLogin("rahul@taskforge.com", "pm")}
-                  className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer"
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer flex flex-col justify-between"
                 >
-                  <span className="block text-[10px] font-bold text-slate-700">Rahul Sharma</span>
-                  <span className="block text-[8px] text-blue-600 font-semibold">Product Mgr</span>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-700">Rahul Sharma</span>
+                    <span className="block text-[8px] text-blue-600 font-semibold uppercase tracking-wider mt-0.5">Product Mgr</span>
+                  </div>
+                  <span className="block text-[8px] text-slate-400 mt-2">Key: <strong className="text-slate-600">pm</strong></span>
                 </button>
                 <button
                   onClick={() => handleDemoLogin("abdul@taskforge.com", "user")}
-                  className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer"
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer flex flex-col justify-between"
                 >
-                  <span className="block text-[10px] font-bold text-slate-700">Abdul Khan</span>
-                  <span className="block text-[8px] text-purple-600 font-semibold">Developer</span>
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-700">Abdul Khan</span>
+                    <span className="block text-[8px] text-purple-600 font-semibold uppercase tracking-wider mt-0.5">Developer</span>
+                  </div>
+                  <span className="block text-[8px] text-slate-400 mt-2">Key: <strong className="text-slate-600">user</strong></span>
+                </button>
+                <button
+                  onClick={() => handleDemoLogin("daya@taskforge.com", "user")}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer flex flex-col justify-between"
+                >
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-700">Inspector Daya</span>
+                    <span className="block text-[8px] text-indigo-600 font-semibold uppercase tracking-wider mt-0.5">Designer</span>
+                  </div>
+                  <span className="block text-[8px] text-slate-400 mt-2">Key: <strong className="text-slate-600">user</strong></span>
+                </button>
+                <button
+                  onClick={() => handleDemoLogin("salunke@taskforge.com", "user")}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 text-left transition-colors cursor-pointer flex flex-col justify-between col-span-2 sm:col-span-1"
+                >
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-700">Dr. Salunke</span>
+                    <span className="block text-[8px] text-emerald-600 font-semibold uppercase tracking-wider mt-0.5">DevOps QA</span>
+                  </div>
+                  <span className="block text-[8px] text-slate-400 mt-2">Key: <strong className="text-slate-600">user</strong></span>
                 </button>
               </div>
             </div>

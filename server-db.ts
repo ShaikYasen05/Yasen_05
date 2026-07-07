@@ -641,16 +641,20 @@ export function saveDB(db: DatabaseSchema): boolean {
     console.warn("Could not save database state to local file (e.g. read-only filesystem), proceeding with Cloud persistence.");
   }
 
-  const dbClient = getFirestoreDb();
-  if (dbClient) {
-    const docRef = doc(dbClient, "workspaces", "default");
-    setDoc(docRef, db)
-      .then(() => {
-        console.log("Successfully saved database state to Firestore in the background.");
-      })
-      .catch((err) => {
-        console.error("Failed to save database state to Firestore in the background:", err);
-      });
+  try {
+    const dbClient = getFirestoreDb();
+    if (dbClient) {
+      const docRef = doc(dbClient, "workspaces", "default");
+      setDoc(docRef, db)
+        .then(() => {
+          console.log("Successfully saved database state to Firestore in the background.");
+        })
+        .catch((err) => {
+          console.error("Failed to save database state to Firestore in the background:", err);
+        });
+    }
+  } catch (err) {
+    console.error("Error writing to Firestore in saveDB:", err);
   }
 
   return true;
