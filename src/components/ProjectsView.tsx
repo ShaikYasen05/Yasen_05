@@ -115,7 +115,7 @@ export default function ProjectsView({ onSelectProject, apiClient, userRole, act
     );
   }
 
-  const canCreate = userRole === "Admin" || userRole === "Project Manager";
+  const canCreate = true;
 
   return (
     <div className="space-y-6">

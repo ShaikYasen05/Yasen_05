@@ -228,19 +228,17 @@ export default function App() {
               {sidebarOpen && <span>Documents</span>}
             </button>
 
-            {(user.role === "Admin" || user.role === "Project Manager") && (
-              <button
-                onClick={() => setActiveTab("admin")}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all ${
-                  activeTab === "admin"
-                    ? "bg-white/8 text-white font-semibold"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                {sidebarOpen && <span>Control Panel</span>}
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab("admin")}
+              className={`w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all ${
+                activeTab === "admin"
+                  ? "bg-white/8 text-white font-semibold"
+                  : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              {sidebarOpen && <span>Control Panel</span>}
+            </button>
           </nav>
         </div>
 

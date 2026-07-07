@@ -34,15 +34,7 @@ export default function AdminPanel({ apiClient, userRole }: AdminPanelProps) {
     fetchAdminData();
   }, []);
 
-  if (userRole !== "Admin" && userRole !== "Project Manager") {
-    return (
-      <div className="h-96 flex flex-col items-center justify-center space-y-3 text-center">
-        <Lock className="w-12 h-12 text-slate-400" />
-        <h3 className="text-sm font-semibold text-slate-700">Access Restricted</h3>
-        <p className="text-xs text-slate-500 max-w-sm">Your workspace role ({userRole}) does not have permissions to access administrative tools.</p>
-      </div>
-    );
-  }
+  // Removed restrictor check to allow normal access to all roles as requested
 
   if (loading) {
     return (
