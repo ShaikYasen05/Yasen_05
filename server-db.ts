@@ -116,6 +116,71 @@ const SEED_USERS: User[] = [
     joinedDate: "2025-05-12",
     lastActive: "2d ago",
     avatar: ""
+  },
+  {
+    id: "usr-neha",
+    name: "Neha Gupta",
+    email: "neha@taskforge.com",
+    phone: "+91 98765 43210",
+    department: "Product Operations",
+    role: UserRole.PROJECT_MANAGER,
+    bio: "Senior Product Operations Manager. Streamlining cross-functional alignment and technical milestones delivery.",
+    skills: ["Operations", "Roadmapping", "Agile Frameworks", "Jira", "Communication"],
+    joinedDate: "2025-02-05",
+    lastActive: "1d ago",
+    avatar: ""
+  },
+  {
+    id: "usr-vikram",
+    name: "Vikram Aditya",
+    email: "vikram@taskforge.com",
+    phone: "+91 99112 23344",
+    department: "Leadership",
+    role: UserRole.ADMIN,
+    bio: "Executive Director and Product Strategy Architect. Scaling development engines and driving company culture.",
+    skills: ["Strategy", "Leadership", "Venture", "Enterprise Growth", "Mentorship"],
+    joinedDate: "2024-11-01",
+    lastActive: "Just now",
+    avatar: ""
+  },
+  {
+    id: "usr-priya",
+    name: "Priya Nair",
+    email: "priya@taskforge.com",
+    phone: "+91 98555 44332",
+    department: "Design System",
+    role: UserRole.TEAM_MEMBER,
+    bio: "Visual designer crafting beautiful iconographies, dark modes, and illustrations for product-driven assets.",
+    skills: ["Illustrator", "Figma", "Branding", "Typography", "Prototyping"],
+    joinedDate: "2025-05-20",
+    lastActive: "10m ago",
+    avatar: ""
+  },
+  {
+    id: "usr-rohan",
+    name: "Rohan Mehta",
+    email: "rohan@taskforge.com",
+    phone: "+91 98666 55443",
+    department: "Engineering",
+    role: UserRole.TEAM_MEMBER,
+    bio: "Frontend developer specializing in high performance React canvas interactions, custom charts, and D3 analytics modules.",
+    skills: ["React", "D3", "Canvas", "HTML5 Canvas", "TypeScript", "Tailwind"],
+    joinedDate: "2025-06-02",
+    lastActive: "3h ago",
+    avatar: ""
+  },
+  {
+    id: "usr-ananya",
+    name: "Ananya Sen",
+    email: "ananya@taskforge.com",
+    phone: "+91 98777 66554",
+    department: "Marketing & Content",
+    role: UserRole.TEAM_MEMBER,
+    bio: "Content Strategist & Copywriter. Crafting beautiful product release notes and managing user onboarding flows.",
+    skills: ["Copywriting", "SEO", "User Experience", "Technical Writing", "Analytics"],
+    joinedDate: "2025-06-15",
+    lastActive: "4d ago",
+    avatar: ""
   }
 ];
 
@@ -617,7 +682,12 @@ export function loadDB(): DatabaseSchema {
       "usr-pm": hashPassword("pm"),
       "usr-liam": hashPassword("user"),
       "usr-sophia": hashPassword("user"),
-      "usr-ethan": hashPassword("user")
+      "usr-ethan": hashPassword("user"),
+      "usr-neha": hashPassword("pm"),
+      "usr-vikram": hashPassword("admin"),
+      "usr-priya": hashPassword("user"),
+      "usr-rohan": hashPassword("user"),
+      "usr-ananya": hashPassword("user")
     },
     organizations: SEED_ORGANIZATIONS,
     teams: SEED_TEAMS,

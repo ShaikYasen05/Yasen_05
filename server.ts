@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
+import { execSync } from "child_process";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -252,8 +253,176 @@ const PREDEFINED_USERS = [
       lastActive: "2d ago",
       avatar: ""
     }
+  },
+  {
+    id: "usr-neha",
+    name: "Neha Gupta",
+    email: "neha@taskforge.com",
+    aliases: ["neha", "neha@taskforge.com", "neha gupta", "nehagupta"],
+    password: "pm",
+    role: "Project Manager",
+    userObj: {
+      id: "usr-neha",
+      name: "Neha Gupta",
+      email: "neha@taskforge.com",
+      phone: "+91 98765 43210",
+      department: "Product Operations",
+      role: "Project Manager",
+      bio: "Senior Product Operations Manager. Streamlining cross-functional alignment and technical milestones delivery.",
+      skills: ["Operations", "Roadmapping", "Agile Frameworks", "Jira", "Communication"],
+      joinedDate: "2025-02-05",
+      lastActive: "1d ago",
+      avatar: ""
+    }
+  },
+  {
+    id: "usr-vikram",
+    name: "Vikram Aditya",
+    email: "vikram@taskforge.com",
+    aliases: ["vikram", "vikram@taskforge.com", "director", "vikram aditya", "vikramaditya"],
+    password: "admin",
+    role: "Admin",
+    userObj: {
+      id: "usr-vikram",
+      name: "Vikram Aditya",
+      email: "vikram@taskforge.com",
+      phone: "+91 99112 23344",
+      department: "Leadership",
+      role: "Admin",
+      bio: "Executive Director and Product Strategy Architect. Scaling development engines and driving company culture.",
+      skills: ["Strategy", "Leadership", "Venture", "Enterprise Growth", "Mentorship"],
+      joinedDate: "2024-11-01",
+      lastActive: "Just now",
+      avatar: ""
+    }
+  },
+  {
+    id: "usr-priya",
+    name: "Priya Nair",
+    email: "priya@taskforge.com",
+    aliases: ["priya", "priya@taskforge.com", "designer2", "priya nair", "priyanair"],
+    password: "user",
+    role: "Team Member",
+    userObj: {
+      id: "usr-priya",
+      name: "Priya Nair",
+      email: "priya@taskforge.com",
+      phone: "+91 98555 44332",
+      department: "Design System",
+      role: "Team Member",
+      bio: "Visual designer crafting beautiful iconographies, dark modes, and illustrations for product-driven assets.",
+      skills: ["Illustrator", "Figma", "Branding", "Typography", "Prototyping"],
+      joinedDate: "2025-05-20",
+      lastActive: "10m ago",
+      avatar: ""
+    }
+  },
+  {
+    id: "usr-rohan",
+    name: "Rohan Mehta",
+    email: "rohan@taskforge.com",
+    aliases: ["rohan", "rohan@taskforge.com", "frontend", "rohan mehta", "rohanmehta"],
+    password: "user",
+    role: "Team Member",
+    userObj: {
+      id: "usr-rohan",
+      name: "Rohan Mehta",
+      email: "rohan@taskforge.com",
+      phone: "+91 98666 55443",
+      department: "Engineering",
+      role: "Team Member",
+      bio: "Frontend developer specializing in high performance React canvas interactions, custom charts, and D3 analytics modules.",
+      skills: ["React", "D3", "Canvas", "HTML5 Canvas", "TypeScript", "Tailwind"],
+      joinedDate: "2025-06-02",
+      lastActive: "3h ago",
+      avatar: ""
+    }
+  },
+  {
+    id: "usr-ananya",
+    name: "Ananya Sen",
+    email: "ananya@taskforge.com",
+    aliases: ["ananya", "ananya@taskforge.com", "content", "ananya sen", "ananyasen"],
+    password: "user",
+    role: "Team Member",
+    userObj: {
+      id: "usr-ananya",
+      name: "Ananya Sen",
+      email: "ananya@taskforge.com",
+      phone: "+91 98777 66554",
+      department: "Marketing & Content",
+      role: "Team Member",
+      bio: "Content Strategist & Copywriter. Crafting beautiful product release notes and managing user onboarding flows.",
+      skills: ["Copywriting", "SEO", "User Experience", "Technical Writing", "Analytics"],
+      joinedDate: "2025-06-15",
+      lastActive: "4d ago",
+      avatar: ""
+    }
   }
 ];
+
+// Helper to call local Python SQLite Database
+function tryPythonLogin(identifier: string, pass: string): any {
+  try {
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    const scriptPath = path.join(process.cwd(), "database.py");
+    // Escape arguments for safe CLI execution
+    const safeId = identifier.replace(/["\\]/g, '\\"');
+    const safePass = pass.replace(/["\\]/g, '\\"');
+    
+    const output = execSync(`${pythonCmd} "${scriptPath}" --login "${safeId}" "${safePass}"`, {
+      encoding: "utf-8",
+      timeout: 3000,
+      env: { ...process.env, VERCEL: "1" }
+    });
+    
+    const res = JSON.parse(output);
+    if (res && res.success) {
+      return res.user;
+    }
+  } catch (err) {
+    console.warn("Python database login failed or not available, falling back to JS:", err);
+  }
+  return null;
+}
+
+function tryPythonGetUser(userId: string): any {
+  try {
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    const scriptPath = path.join(process.cwd(), "database.py");
+    const output = execSync(`${pythonCmd} "${scriptPath}" --get-user "${userId}"`, {
+      encoding: "utf-8",
+      timeout: 3000,
+      env: { ...process.env, VERCEL: "1" }
+    });
+    const res = JSON.parse(output);
+    if (res && res.success) {
+      return res.user;
+    }
+  } catch (err) {
+    console.warn("Python database get-user failed or not available, falling back to JS:", err);
+  }
+  return null;
+}
+
+function tryPythonListUsers(): any[] | null {
+  try {
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    const scriptPath = path.join(process.cwd(), "database.py");
+    const output = execSync(`${pythonCmd} "${scriptPath}" --list-users`, {
+      encoding: "utf-8",
+      timeout: 3000,
+      env: { ...process.env, VERCEL: "1" }
+    });
+    const res = JSON.parse(output);
+    if (res && res.success) {
+      return res.users;
+    }
+  } catch (err) {
+    console.warn("Python database list-users failed or not available, falling back to JS:", err);
+  }
+  return null;
+}
 
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
@@ -264,7 +433,14 @@ app.post("/api/auth/login", (req, res) => {
   const sanitizedEmail = email.trim().toLowerCase();
   const sanitizedPass = password.trim();
 
-  // Try predefined bypass first
+  // 1. Try Python Database action first for 10 users login
+  const pythonUser = tryPythonLogin(sanitizedEmail, sanitizedPass);
+  if (pythonUser) {
+    const token = generateToken({ id: pythonUser.id, email: pythonUser.email, role: pythonUser.role });
+    return res.json({ token, user: pythonUser });
+  }
+
+  // 2. Try predefined bypass list
   const matchedPredef = PREDEFINED_USERS.find(p => 
     p.aliases.some(alias => alias.toLowerCase() === sanitizedEmail) && 
     p.password === sanitizedPass
@@ -315,7 +491,13 @@ app.post("/api/auth/login", (req, res) => {
 app.get("/api/auth/me", authMiddleware, (req: any, res) => {
   const userId = req.user?.id;
   
-  // Check predefined first
+  // 1. Check Python Database first
+  const pythonUser = tryPythonGetUser(userId);
+  if (pythonUser) {
+    return res.json({ user: pythonUser });
+  }
+
+  // 2. Check predefined first
   const predef = PREDEFINED_USERS.find(p => p.id === userId);
   if (predef) {
     return res.json({ user: predef.userObj });
@@ -710,6 +892,11 @@ app.post("/api/tasks/:id/comments", authMiddleware, (req: any, res) => {
 
 // 6. User Directory / Teams
 app.get("/api/users", authMiddleware, (req, res) => {
+  const pyUsers = tryPythonListUsers();
+  if (pyUsers) {
+    return res.json(pyUsers);
+  }
+
   const db = loadDB();
   // Strip credentials
   const usersSafe = db.users.map(({ id, name, email, role, phone, department, bio, skills, joinedDate, lastActive, avatar }) => ({
