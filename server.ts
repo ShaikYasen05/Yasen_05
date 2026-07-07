@@ -152,7 +152,7 @@ const PREDEFINED_USERS = [
     id: "usr-admin",
     name: "Sarika Salunke",
     email: "sarika@taskforge.com",
-    aliases: ["sarika", "sarika@taskforge.com", "admin"],
+    aliases: ["sarika", "sarika@taskforge.com", "admin", "sarika salunke", "sarikasalunke"],
     password: "admin",
     role: "Admin",
     userObj: {
@@ -173,7 +173,7 @@ const PREDEFINED_USERS = [
     id: "usr-pm",
     name: "Rahul Sharma",
     email: "rahul@taskforge.com",
-    aliases: ["rahul", "rahul@taskforge.com", "pm"],
+    aliases: ["rahul", "rahul@taskforge.com", "pm", "rahul sharma", "rahulsharma"],
     password: "pm",
     role: "Project Manager",
     userObj: {
@@ -194,7 +194,7 @@ const PREDEFINED_USERS = [
     id: "usr-liam",
     name: "Abdul Khan",
     email: "abdul@taskforge.com",
-    aliases: ["abdul", "abdul@taskforge.com", "user", "developer"],
+    aliases: ["abdul", "abdul@taskforge.com", "user", "developer", "abdul khan", "abdulkhan"],
     password: "user",
     role: "Team Member",
     userObj: {
@@ -215,7 +215,7 @@ const PREDEFINED_USERS = [
     id: "usr-sophia",
     name: "Inspector Daya",
     email: "daya@taskforge.com",
-    aliases: ["daya", "daya@taskforge.com", "designer"],
+    aliases: ["daya", "daya@taskforge.com", "designer", "inspector daya", "inspectordaya"],
     password: "user",
     role: "Team Member",
     userObj: {
@@ -236,7 +236,7 @@ const PREDEFINED_USERS = [
     id: "usr-ethan",
     name: "Dr. Salunke",
     email: "salunke@taskforge.com",
-    aliases: ["salunke", "salunke@taskforge.com", "devops", "qa"],
+    aliases: ["salunke", "salunke@taskforge.com", "devops", "qa", "dr. salunke", "dr salunke", "drsalunke"],
     password: "user",
     role: "Team Member",
     userObj: {
